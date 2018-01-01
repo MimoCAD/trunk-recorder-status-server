@@ -31,17 +31,22 @@ var stats = {};
 server.on('upgrade', (request, socket, head) => {
     const pathname = url.parse(request.url).pathname;
 
-    if (pathname === '/client') {
+    if (pathname === '/client')
+    {
         console.log("Upgrading Client Connection");
         clientWss.handleUpgrade(request, socket, head, (ws) => {
             clientWss.emit('connection', ws);
         });
-    } else if (pathname === '/server') {
+    }
+    else if (pathname === '/server')
+    {
         console.log("Upgrading Server Connection");
         serverWss.handleUpgrade(request, socket, head, (ws) => {
             serverWss.emit('connection', ws);
         });
-    } else {
+    }
+    else
+    {
         socket.destroy();
     }
 });
@@ -49,16 +54,22 @@ server.on('upgrade', (request, socket, head) => {
 app.use(bodyParser());
 app.use(express.static(__dirname + '/public'));
 
-function get_clients(req, res) {
-    if (req.params.shortName) {
+function get_clients(req, res)
+{
+    if (req.params.shortName)
+    {
         var short_name = req.params.shortName.toLowerCase();
-    } else {
+    }
+    else
+    {
         var short_name = null;
     }
-    for (var i = 0; i < clients.length; i++) {
+    for (var i = 0; i < clients.length; i++)
+    {
         var response = [];
         //console.log(util.inspect(clients[i].socket));
-        if (!short_name || (clients[i].shortName == short_name)) {
+        if (!short_name || (clients[i].shortName == short_name))
+        {
             var age = (Date.now() - clients[i].timestamp) / 1000;
             var obj = {
                 shortName: clients[i].shortName,
@@ -71,13 +82,12 @@ function get_clients(req, res) {
             }
             response.push(obj);
         }
-
     }
     res.contentType('json');
     res.send(JSON.stringify(response));
-
 }
-app.get('/', function(req, res) {
+
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname + '/public/index.html'));
 });
 
@@ -85,40 +95,52 @@ app.get('/', function(req, res) {
 app.get('/:shortName/clients', get_clients);
 app.get('/clients', get_clients);
 
-function notify_clients(call) {
+function notify_clients(call)
+{
     call.type = "calls";
     var sent = 0;
 
-    for (var i = 0; i < clients.length; i++) {
+    for (var i = 0; i < clients.length; i++)
+    {
         //console.log(util.inspect(clients[i].socket));
-        if (clients[i].shortName == call.shortName.toLowerCase()) {
-            if (clients[i].filterCode == "") {
+        if (clients[i].shortName == call.shortName.toLowerCase())
+        {
+            if (clients[i].filterCode == "")
+            {
                 //console.log("Call TG # is set to All");
                 sent++;
                 clients[i].socket.send(JSON.stringify(call));
-            } else if (clients[i].filterType == "unit") {
+            }
+            else if (clients[i].filterType == "unit")
+            {
                 var codeArray = clients[i].filterCode.split(',');
                 var success = false;
-                for (var j = 0; j < codeArray.length; ++j) {
-                    for (var k = 0; k < call.srcList.length; k++) {
-                        if (codeArray[j] == call.srcList[k]) {
+                for (var j = 0; j < codeArray.length; ++j)
+                {
+                    for (var k = 0; k < call.srcList.length; k++)
+                    {
+                        if (codeArray[j] == call.srcList[k])
+                        {
                             sent++;
                             clients[i].socket.send(JSON.stringify(call));
                             success = true;
                             break;
                         }
                     }
-                    if (success) {
+                    if (success)
+                    {
                         break;
                     }
                 }
-
-
-            } else {
+            }
+            else
+            {
                 var codeArray = clients[i].talkgroupNums;
                 //console.log("Group Client: " + i + "\tCodes: " + codeArray + "\tTalkgroupNum: " + call.talkgroupNum);
-                for (var j = 0; j < codeArray.length; ++j) {
-                    if (codeArray[j] == call.talkgroupNum) {
+                for (var j = 0; j < codeArray.length; ++j)
+                {
+                    if (codeArray[j] == call.talkgroupNum)
+                    {
                         console.log("[ " + i + " ] - Sending one filtered call");
                         clients[i].socket.send(JSON.stringify(call));
                         sent++
@@ -128,16 +150,16 @@ function notify_clients(call) {
             }
         }
     }
-
-    if (sent > 0) {
+    if (sent > 0)
+    {
         console.log("Sent calls to " + sent + " clients, System: " + call.shortName.toLowerCase());
     }
 }
 
-function heartbeat() {
+function heartbeat()
+{
     this.isAlive = true;
 }
-
 
 clientWss.on('connection', function connection(ws, req) {
     var client = {
@@ -148,68 +170,77 @@ clientWss.on('connection', function connection(ws, req) {
     ws.isAlive = true;
     ws.on('pong', heartbeat);
     console.log((new Date()) + ' WebSocket Connection accepted.');
-    ws.on('message', function incoming(message) {
+    ws.on('message', function incoming(message)
+    {
         console.log("Got message: " + message);
-        try {
+        try
+        {
             var data = JSON.parse(message);
-            if (typeof data.type !== "undefined") {
-                if (data.type == 'add') {
-
+            if (typeof data.type !== "undefined")
+            {
+                if (data.type == 'add')
+                {
                     var client = {
                         socket: ws,
                         code: null
                     };
                     clients.push(client);
                     console.log("[ " + data.type + " ] Client added");
-                    if (srv){
-                      console.log("Sending Srv config: " + srv.config);
-                      ws.send(JSON.stringify(srv.config));
-                      console.log("Sent");
+                    if (srv)
+                    {
+                        console.log("Sending Srv config: " + srv.config);
+                        ws.send(JSON.stringify(srv.config));
+                        console.log("Sent");
                     }
                 }
                 var index = clients.indexOf(client);
-                if (index != -1) {
-
+                if (index != -1)
+                {
                     clients[index].timestamp = new Date();
                     console.log("[ " + data.type + " ] Client updated: " + index);
-                } else {
+                }
+                else
+                {
                     console.log("Error - WebSocket: Client not Found!");
                 }
-
             }
-
-        } catch (err) {
+        }
+        catch (err)
+        {
             console.log("JSON PArsing Error: " + err);
         }
         console.log('Received Message: ' + message);
     });
-    ws.on('close', function(reasonCode, description) {
+    ws.on('close', (reasonCode, description) => {
         console.log((new Date()) + ' Client ' + connection.remoteAddress + ' disconnected.');
         console.log("code: " + reasonCode + " description: " + description);
-        for (var i = 0; i < clients.length; i++) {
+        for (var i = 0; i < clients.length; i++)
+        {
             // # Remove from our connections list so we don't send
             // # to a dead socket
-            if (clients[i].socket == ws) {
+            if (clients[i].socket == ws)
+            {
                 clients.splice(i);
                 break;
             }
         }
     });
-
 });
 
-serverWss.on('connection', function connection(ws, req) {
-
-
+serverWss.on('connection', function connection(ws, req)
+{
     ws.isAlive = true;
     ws.on('pong', heartbeat);
     console.log((new Date()) + ' WebSocket Connection accepted.');
-    ws.on('message', function incoming(message) {
-        try {            var data = JSON.parse(message);
-            if (typeof data.type !== "undefined") {
-
-                if (data.type == 'config') {
-
+    ws.on('message', function incoming(message)
+    {
+        try
+        {
+            var data = JSON.parse(message);
+            if (typeof data.type !== "undefined")
+            {
+                if (data.type == 'config')
+                {
                     srv = {
                         socket: ws,
                         config: data,
@@ -217,43 +248,50 @@ serverWss.on('connection', function connection(ws, req) {
                     };
 
                     console.log("[ " + data.type + " ] Server Live - Config rcv'd");
-              } else if (data.type == 'status') {
-                console.log("[ " + data.type + " ] Server - Status message ");
-              } else if (data.type == 'rate') {
-                console.log("[ " + data.type + " ] Server - Rate message ");
-              } else {
-                console.log("[ " + data.type + " ] Server - Uknown message type");
-              }
-            } else {
-              console.log("Server - Message type not defined");
+                }
+                else if (data.type == 'status')
+                {
+                    console.log("[ " + data.type + " ] Server - Status message ");
+                }
+                else if (data.type == 'rate')
+                {
+                    console.log("[ " + data.type + " ] Server - Rate message ");
+                }
+                else
+                {
+                    console.log("[ " + data.type + " ] Server - Uknown message type");
+                }
             }
-            clientWss.clients.forEach(function each(client) {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(message);
-              }
+            else
+            {
+                console.log("Server - Message type not defined");
+            }
+            clientWss.clients.forEach(function each(client)
+            {
+                if (client.readyState === WebSocket.OPEN)
+                {
+                    client.send(message);
+                }
             });
-        } catch (err) {
+        }
+        catch (err)
+        {
             console.log("JSON PArsing Error: " + err);
         }
         console.log('Received Message: ' + message);
     });
-    ws.on('close', function(reasonCode, description) {
+    ws.on('close', function(reasonCode, description)
+    {
         console.log((new Date()) + ' Server ' + connection.remoteAddress + ' disconnected.');
         console.log("code: " + reasonCode + " description: " + description);
         srv = null;
     });
-
 });
 
-
-
-
-server.listen(3010, function() {
+server.listen(3010, () => {
     console.log('Web interface is available at: ' + server.address().port + '...');
     console.log('status socket address is probably: http://localhost/server');
     console.log(process.env)
 });
-
-
 
 module.exports = server;
